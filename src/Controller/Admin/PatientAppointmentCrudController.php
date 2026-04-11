@@ -38,10 +38,12 @@ class PatientAppointmentCrudController extends BaseCrudController
             ChoiceField::new('status')
                 ->setChoices([
                     'online_calendar.status.active' => PatientAppointment::STATUS_ACTIVE,
+                    'online_calendar.status.validated' => PatientAppointment::STATUS_VALIDATED,
                     'online_calendar.status.cancelled' => PatientAppointment::STATUS_CANCELLED,
                 ])
                 ->renderAsBadges([
                     PatientAppointment::STATUS_ACTIVE => 'success',
+                    PatientAppointment::STATUS_VALIDATED => 'primary',
                     PatientAppointment::STATUS_CANCELLED => 'danger',
                 ]),
             DateTimeField::new('startDate'),
@@ -60,6 +62,7 @@ class PatientAppointmentCrudController extends BaseCrudController
             ChoiceFilter::new('status')
                 ->setChoices([
                     'online_calendar.status.active' => PatientAppointment::STATUS_ACTIVE,
+                    'online_calendar.status.validated' => PatientAppointment::STATUS_VALIDATED,
                     'online_calendar.status.cancelled' => PatientAppointment::STATUS_CANCELLED,
                 ])
                 ->canSelectMultiple()

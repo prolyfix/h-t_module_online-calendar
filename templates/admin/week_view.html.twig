@@ -80,6 +80,8 @@
                                         {% endif %}
                                         {% if appointment.status == 'cancelled' %}
                                             <span class="badge bg-danger">{{ 'online_calendar.status.cancelled'|trans }}</span>
+                                        {% elseif appointment.status == 'validated' %}
+                                            <span class="badge bg-primary">{{ 'online_calendar.status.validated'|trans }}</span>
                                         {% else %}
                                             <span class="badge bg-success">{{ 'online_calendar.status.active'|trans }}</span>
                                         {% endif %}

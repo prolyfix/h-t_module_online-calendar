@@ -27,6 +27,7 @@ online_calendar:
     sunday: "Sonntag"
   status:
     active: "Aktiv"
+    validated: "Bestaetigt"
     cancelled: "Abgesagt"
   widget:
     today_appointments:

@@ -3,6 +3,7 @@
 namespace Prolyfix\OnlineCalendarBundle\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Prolyfix\HolidayAndTime\Entity\TimeData;
 use Prolyfix\CrmBundle\Entity\AppointmentInterface;
@@ -22,6 +23,7 @@ class PatientAppointment extends TimeData implements AppointmentInterface
     use AppointmentTrait;
 
     public const STATUS_ACTIVE = 'active';
+    public const STATUS_VALIDATED = 'validated';
     public const STATUS_CANCELLED = 'cancelled';
 
     #[ORM\Id]
@@ -52,6 +54,9 @@ class PatientAppointment extends TimeData implements AppointmentInterface
 
     #[ORM\Column(length: 32, options: ['default' => self::STATUS_ACTIVE])]
     private string $status = self::STATUS_ACTIVE;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $reminderSentAt = null;
 
     public function getPatient(): ?Patient
     {
@@ -132,6 +137,18 @@ class PatientAppointment extends TimeData implements AppointmentInterface
     public function setStatus(string $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getReminderSentAt(): ?\DateTimeInterface
+    {
+        return $this->reminderSentAt;
+    }
+
+    public function setReminderSentAt(?\DateTimeInterface $reminderSentAt): static
+    {
+        $this->reminderSentAt = $reminderSentAt;
 
         return $this;
     }

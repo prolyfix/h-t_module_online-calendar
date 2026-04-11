@@ -27,6 +27,7 @@ online_calendar:
     sunday: "Dimanche"
   status:
     active: "Actif"
+    validated: "Valide"
     cancelled: "Annule"
   widget:
     today_appointments:
