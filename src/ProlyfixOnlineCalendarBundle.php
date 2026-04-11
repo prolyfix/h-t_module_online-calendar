@@ -11,7 +11,11 @@ use Prolyfix\CrmBundle\Entity\Appointment;
 use Prolyfix\CrmBundle\Entity\Contact;
 use Prolyfix\CrmBundle\Entity\ThirdParty;
 use Prolyfix\CrmBundle\Entity\ThirdPartyCategory;
+use Prolyfix\OnlineCalendarBundle\Entity\AppointmentCategory;
 use Prolyfix\OnlineCalendarBundle\Entity\PatientAppointment;
+use Prolyfix\OnlineCalendarBundle\Entity\OpenTime;
+use Prolyfix\OnlineCalendarBundle\Controller\Admin\PatientAppointmentCrudController;
+use Prolyfix\OnlineCalendarBundle\Controller\Admin\OpenTimeCrudController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
@@ -27,6 +31,9 @@ class ProlyfixOnlineCalendarBundle extends ModuleBundle
     public static function getTables(): array
     {
         return [
+            PatientAppointment::class,
+            AppointmentCategory::class,
+            OpenTime::class,
         ];
     }
 
@@ -59,16 +66,22 @@ class ProlyfixOnlineCalendarBundle extends ModuleBundle
 
     public function getMenuConfiguration(): array
     {
-         return [];
+        return [
+            'patient'=> [
+                MenuItem::linkToCrud('PatientenCalendar', 'fas fa-user-injured', PatientAppointment::class),
+                MenuItem::linkToCrud('AppointmentCategory', 'fas fa-user-injured', AppointmentCategory::class),
+                MenuItem::linkToRoute('Weekly View', 'fas fa-calendar-week', 'admin', [
+                    'crudAction' => 'weekView',
+                    'crudControllerFqcn' => PatientAppointmentCrudController::class,
+                ]),
+                MenuItem::linkToCrud('Open Times', 'fas fa-clock', OpenTime::class),
+            ]
+        ];
     }
 
     public static function getUserConfiguration(): array
     {
-        return [
-            'patient'=> [
-                MenuItem::linkToCrud('PatientenCalendar', 'fas fa-user-injured', PatientAppointment::class),
-            ]
-        ];
+        return[];
     }
 
     public static function getModuleAccess(): array

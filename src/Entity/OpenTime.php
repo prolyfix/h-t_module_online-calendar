@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Prolyfix\HolidayAndTime\Entity\TimeData;
+use Prolyfix\HolidayAndTime\Entity\User;
 use Prolyfix\OnlineCalendarBundle\Repository\OpenTimeRepository;
 use Prolyfix\WeekplanningBundle\Entity\Room;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -46,6 +47,10 @@ class OpenTime extends TimeData
     #[ORM\ManyToOne(targetEntity: Room::class)]
     #[Groups(['module_configuration_value:read', 'module_configuration_value:write'])]
     private ?Room $room = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[Groups(['module_configuration_value:read', 'module_configuration_value:write'])]
+    private ?User $user = null;
 
     public function getId(): ?int
     {
@@ -120,6 +125,18 @@ class OpenTime extends TimeData
     public function setRoom(?Room $room): static
     {
         $this->room = $room;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

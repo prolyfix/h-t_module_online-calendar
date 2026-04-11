@@ -1,0 +1,35 @@
+online_calendar:
+  view:
+    week_overview: "Wochenansicht Termine"
+    day_overview: "Tagesansicht Termine"
+    mode: "Ansichtsmodus"
+    week: "Woche"
+    day: "Tag"
+  filter:
+    user: "Benutzer:"
+    all_users: "Alle Benutzer"
+    apply: "Anwenden"
+  navigation:
+    group: "Navigation"
+    previous: "Zurueck"
+    next: "Weiter"
+    today: "Heute"
+    current_week: "Aktuelle Woche"
+  table:
+    time: "Zeit"
+  day:
+    monday: "Montag"
+    tuesday: "Dienstag"
+    wednesday: "Mittwoch"
+    thursday: "Donnerstag"
+    friday: "Freitag"
+    saturday: "Samstag"
+    sunday: "Sonntag"
+  status:
+    active: "Aktiv"
+    cancelled: "Abgesagt"
+  widget:
+    today_appointments:
+      title: "Heutige Termine"
+      empty: "Keine Termine fuer heute."
+      default_name: "Termin"

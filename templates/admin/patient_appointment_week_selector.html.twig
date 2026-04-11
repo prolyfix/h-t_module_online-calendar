@@ -1,0 +1,44 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}
+    Select Patient for Weekly View
+{% endblock %}
+
+{% block main %}
+    <div class="content-panel">
+        {% if patients is empty %}
+            <p class="text-muted">No patients found.</p>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                            <tr>
+                                <td>{{ patient.firstName }}</td>
+                                <td>{{ patient.lastName }}</td>
+                                <td>{{ patient.email ?: '-' }}</td>
+                                <td>
+                                    <a href="{{ adminUrlGenerator
+                                        .setController('Prolyfix\\OnlineCalendarBundle\\Controller\\Admin\\PatientAppointmentCrudController')
+                                        .setAction('weekView')
+                                        .set('patientId', patient.id)
+                                        .generateUrl() }}" class="btn btn-sm btn-primary">
+                                        View Week
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

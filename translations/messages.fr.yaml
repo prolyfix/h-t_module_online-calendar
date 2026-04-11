@@ -1,0 +1,35 @@
+online_calendar:
+  view:
+    week_overview: "Vue hebdomadaire des rendez-vous"
+    day_overview: "Vue journaliere des rendez-vous"
+    mode: "Mode d'affichage"
+    week: "Semaine"
+    day: "Jour"
+  filter:
+    user: "Utilisateur :"
+    all_users: "Tous les utilisateurs"
+    apply: "Appliquer"
+  navigation:
+    group: "Navigation"
+    previous: "Precedent"
+    next: "Suivant"
+    today: "Aujourd'hui"
+    current_week: "Semaine en cours"
+  table:
+    time: "Heure"
+  day:
+    monday: "Lundi"
+    tuesday: "Mardi"
+    wednesday: "Mercredi"
+    thursday: "Jeudi"
+    friday: "Vendredi"
+    saturday: "Samedi"
+    sunday: "Dimanche"
+  status:
+    active: "Actif"
+    cancelled: "Annule"
+  widget:
+    today_appointments:
+      title: "Rendez-vous du jour"
+      empty: "Aucun rendez-vous pour aujourd'hui."
+      default_name: "Rendez-vous"

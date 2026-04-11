@@ -48,6 +48,7 @@ class OpenTimeCrudController extends AbstractCrudController
         yield TimeField::new('endTime');
         yield TimeField::new('breakFrom')->hideOnIndex();
         yield TimeField::new('breakTo')->hideOnIndex();
+        yield AssociationField::new('user');
         yield AssociationField::new('room');
     }
 }

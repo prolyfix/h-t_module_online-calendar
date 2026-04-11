@@ -1,0 +1,66 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}
+    Week View - {{ patient.firstName }} {{ patient.lastName }}
+{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group" aria-label="Week navigation">
+        <a class="btn btn-secondary" href="{{ previousUrl }}">Previous week</a>
+        <a class="btn btn-outline-secondary" href="{{ currentUrl }}">Current week</a>
+        <a class="btn btn-secondary" href="{{ nextUrl }}">Next week</a>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="content-panel mb-3">
+        <h5 class="mb-0">
+            {{ weekStart|date('d.m.Y') }} - {{ weekEnd|date('d.m.Y') }}
+        </h5>
+    </div>
+
+    {% for day in days %}
+        <section class="content-panel mb-3">
+            <h6 class="mb-3">{{ day.date|date('l, d.m.Y') }}</h6>
+
+            {% if day.appointments is empty %}
+                <p class="text-muted mb-0">No appointments.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;">Time</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in day.appointments %}
+                                <tr>
+                                    <td>
+                                        {{ appointment.startDate ? appointment.startDate|date('H:i') : '-' }}
+                                        -
+                                        {{ appointment.endDate ? appointment.endDate|date('H:i') : '-' }}
+                                    </td>
+                                    <td>{{ appointment.name ?: '-' }}</td>
+                                    <td>{{ appointment.appointmentType ? appointment.appointmentType.name : '-' }}</td>
+                                    <td>
+                                        {% if appointment.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ appointment.description ?: '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    {% endfor %}
+{% endblock %}

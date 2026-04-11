@@ -1,0 +1,23 @@
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">{{ 'online_calendar.widget.today_appointments.title'|trans }}</h5>
+
+        {% if appointments is empty %}
+            <p class="text-muted mb-0">{{ 'online_calendar.widget.today_appointments.empty'|trans }}</p>
+        {% else %}
+            <ul class="list-group list-group-flush">
+                {% for appointment in appointments %}
+                    <li class="list-group-item px-0">
+                        <div><strong>{{ appointment.startDate ? appointment.startDate|date('H:i') : '-' }}</strong> - {{ appointment.name ?: ('online_calendar.widget.today_appointments.default_name'|trans) }}</div>
+                        <div class="text-muted small">
+                            {{ appointment.patient ? appointment.patient : '-' }}
+                            {% if appointment.appointmentType %}
+                                • {{ appointment.appointmentType.name }}
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>

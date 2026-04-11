@@ -1,0 +1,105 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}
+    {{ viewMode == 'day' ? 'online_calendar.view.day_overview'|trans : 'online_calendar.view.week_overview'|trans }}
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <form method="get" action="{{ ea_url().setController('Prolyfix\\OnlineCalendarBundle\\Controller\\Admin\\PatientAppointmentCrudController').setAction('weekView') }}" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="view" value="{{ viewMode }}">
+            <label for="week-view-user" class="mb-0">{{ 'online_calendar.filter.user'|trans }}</label>
+            <select id="week-view-user" name="userId" class="form-select form-select-sm" style="min-width: 220px;">
+                <option value="">{{ 'online_calendar.filter.all_users'|trans }}</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}" {{ selectedUserId == user.id ? 'selected' : '' }}>
+                        {{ user.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-primary" type="submit">{{ 'online_calendar.filter.apply'|trans }}</button>
+        </form>
+
+        <div class="btn-group" role="group" aria-label="{{ 'online_calendar.view.mode'|trans }}">
+            <a class="btn {{ viewMode == 'week' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ toggleWeekUrl }}">{{ 'online_calendar.view.week'|trans }}</a>
+            <a class="btn {{ viewMode == 'day' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ toggleDayUrl }}">{{ 'online_calendar.view.day'|trans }}</a>
+        </div>
+
+        <div class="btn-group ms-auto" role="group" aria-label="{{ 'online_calendar.navigation.group'|trans }}">
+            <a class="btn btn-secondary" href="{{ previousUrl }}">« {{ 'online_calendar.navigation.previous'|trans }}</a>
+            <a class="btn btn-outline-secondary" href="{{ currentUrl }}">{{ viewMode == 'day' ? 'online_calendar.navigation.today'|trans : 'online_calendar.navigation.current_week'|trans }}</a>
+            <a class="btn btn-secondary" href="{{ nextUrl }}">{{ 'online_calendar.navigation.next'|trans }} »</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="content-panel mb-3">
+        <h5 class="mb-0">{{ weekStart|date('d.m.Y') }} - {{ weekEnd|date('d.m.Y') }}</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 100px;">{{ 'online_calendar.table.time'|trans }}</th>
+                    {% for dayKey, day in days %}
+                        <th>
+                            <strong>{{ ('online_calendar.day.' ~ day.dayName|lower)|trans }}</strong><br>
+                            {{ day.date|date('d.m.Y') }}
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] %}
+                
+                {% for hour in hours %}
+                    <tr>
+                        <td class="text-center">
+                            <strong>{{ '%02d'|format(hour) }}:00</strong>
+                        </td>
+                        {% for dayKey, day in days %}
+                            <td style="vertical-align: top; min-height: 80px;">
+                                {% set dayAppointments = day.appointments|filter((app) => app.startDate.format('H')|number_format(0) == hour) %}
+                                {% for appointment in dayAppointments %}
+                                    <div class="appointment-block mb-2">
+                                        <small>
+                                            <strong>{{ appointment.startDate|date('H:i') }}</strong>
+                                            {% if appointment.endDate %}
+                                                - {{ appointment.endDate|date('H:i') }}
+                                            {% endif %}
+                                        </small>
+                                        <br>
+                                        <strong>{{ appointment.name ?: '-' }}</strong><br>
+                                        {% if appointment.patient %}
+                                            <small class="text-muted">{{ appointment.patient }}</small><br>
+                                        {% endif %}
+                                        {% if appointment.appointmentType %}
+                                            <small class="text-muted">{{ appointment.appointmentType.name }}</small><br>
+                                        {% endif %}
+                                        {% if appointment.status == 'cancelled' %}
+                                            <span class="badge bg-danger">{{ 'online_calendar.status.cancelled'|trans }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ 'online_calendar.status.active'|trans }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        .appointment-block {
+            padding: 5px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            font-size: 0.85rem;
+        }
+    </style>
+{% endblock %}

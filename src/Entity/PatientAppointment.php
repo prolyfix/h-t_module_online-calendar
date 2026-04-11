@@ -20,6 +20,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
 class PatientAppointment extends TimeData implements AppointmentInterface
 {
     use AppointmentTrait;
+
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_CANCELLED = 'cancelled';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -45,6 +49,9 @@ class PatientAppointment extends TimeData implements AppointmentInterface
     #[ORM\ManyToOne(targetEntity: AppointmentCategory::class)]
     #[Groups(['module_configuration_value:read'])]
     private ?AppointmentCategory $appointmentType = null;
+
+    #[ORM\Column(length: 32, options: ['default' => self::STATUS_ACTIVE])]
+    private string $status = self::STATUS_ACTIVE;
 
     public function getPatient(): ?Patient
     {
@@ -115,5 +122,17 @@ class PatientAppointment extends TimeData implements AppointmentInterface
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
+
+        return $this;
     }
 }
