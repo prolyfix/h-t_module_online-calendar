@@ -19,6 +19,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Prolyfix\HolidayAndTime\Entity\User;
+use Prolyfix\OnlineCalendarBundle\Entity\OpenTime;
 use Prolyfix\OnlineCalendarBundle\Entity\PatientAppointment;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,6 +28,39 @@ class PatientAppointmentCrudController extends BaseCrudController
     public static function getEntityFqcn(): string
     {
         return PatientAppointment::class;
+    }
+
+    public function createEntity(string $entityFqcn): PatientAppointment
+    {
+        $appointment = new PatientAppointment();
+        $request = $this->container->get('request_stack')->getCurrentRequest();
+
+        if ($request === null) {
+            return $appointment;
+        }
+
+        $slotDate = (string) $request->query->get('slotDate', '');
+        $slotHour = $request->query->get('slotHour');
+
+        if ($slotDate !== '' && is_numeric($slotHour)) {
+            $hour = max(0, min(23, (int) $slotHour));
+            $start = DateTimeImmutable::createFromFormat('Y-m-d H:i', sprintf('%s %02d:00', $slotDate, $hour));
+
+            if ($start instanceof DateTimeImmutable) {
+                $appointment->setStartDate(\DateTime::createFromImmutable($start));
+                $appointment->setEndDate(\DateTime::createFromImmutable($start->modify('+1 hour')));
+            }
+        }
+
+        $slotDoctorId = $request->query->getInt('slotDoctorId');
+        if ($slotDoctorId > 0) {
+            $doctor = $this->em->getRepository(User::class)->find($slotDoctorId);
+            if ($doctor instanceof User) {
+                $appointment->setOwner($doctor);
+            }
+        }
+
+        return $appointment;
     }
 
     public function configureFields(string $pageName): iterable
@@ -159,6 +193,114 @@ class PatientAppointmentCrudController extends BaseCrudController
             }
         }
 
+        $hours = range(8, 18);
+
+        $openTimeWeekdays = array_values(array_unique(array_map(
+            static fn (array $day): string => (string) $day['dayName'],
+            $days
+        )));
+
+        $openTimeQb = $this->em->getRepository(OpenTime::class)->createQueryBuilder('o');
+        $openTimeQb
+            ->leftJoin('o.user', 'u')->addSelect('u')
+            ->where('o.weekday IN (:weekdays)')
+            ->andWhere('o.user IS NOT NULL')
+            ->setParameter('weekdays', $openTimeWeekdays)
+            ->orderBy('u.name', 'ASC')
+            ->addOrderBy('o.weekday', 'ASC')
+            ->addOrderBy('o.startTime', 'ASC');
+
+        if ($selectedUserId > 0) {
+            $openTimeQb
+                ->andWhere('u.id = :selectedOpenTimeUserId')
+                ->setParameter('selectedOpenTimeUserId', $selectedUserId);
+        }
+
+        /** @var OpenTime[] $openTimes */
+        $openTimes = $openTimeQb->getQuery()->getResult();
+
+        $doctorsById = [];
+        $openTimesByWeekdayDoctor = [];
+
+        foreach ($openTimes as $openTime) {
+            $doctor = $openTime->getUser();
+            if (!$doctor instanceof User || $doctor->getId() === null) {
+                continue;
+            }
+
+            $doctorId = $doctor->getId();
+            $weekday = (string) $openTime->getWeekday();
+
+            $doctorsById[$doctorId] = $doctor;
+            $openTimesByWeekdayDoctor[$weekday][$doctorId][] = $openTime;
+        }
+
+        $doctors = array_values($doctorsById);
+        usort($doctors, static function (User $left, User $right): int {
+            return strcmp((string) $left->getName(), (string) $right->getName());
+        });
+
+        $toMinutes = static function (?\DateTimeInterface $time): ?int {
+            if ($time === null) {
+                return null;
+            }
+
+            return ((int) $time->format('H')) * 60 + (int) $time->format('i');
+        };
+
+        $intersects = static function (int $startA, int $endA, int $startB, int $endB): bool {
+            return $startA < $endB && $startB < $endA;
+        };
+
+        $slotStatusByDayDoctorHour = [];
+        foreach ($days as $dayKey => $day) {
+            $weekday = (string) $day['dayName'];
+            foreach ($doctors as $doctor) {
+                $doctorId = $doctor->getId();
+                if ($doctorId === null) {
+                    continue;
+                }
+
+                $doctorOpenTimes = $openTimesByWeekdayDoctor[$weekday][$doctorId] ?? [];
+
+                foreach ($hours as $hour) {
+                    $cellStart = $hour * 60;
+                    $cellEnd = ($hour + 1) * 60;
+                    $status = 'closed';
+
+                    foreach ($doctorOpenTimes as $openTime) {
+                        $openStart = $toMinutes($openTime->getStartTime());
+                        $openEnd = $toMinutes($openTime->getEndTime());
+                        if ($openStart === null || $openEnd === null || !$intersects($cellStart, $cellEnd, $openStart, $openEnd)) {
+                            continue;
+                        }
+
+                        $status = 'open';
+
+                        $breakStart = $toMinutes($openTime->getBreakFrom());
+                        $breakEnd = $toMinutes($openTime->getBreakTo());
+                        if ($breakStart !== null && $breakEnd !== null && $intersects($cellStart, $cellEnd, $breakStart, $breakEnd)) {
+                            $status = 'break';
+                        }
+                    }
+
+                    $slotStatusByDayDoctorHour[$dayKey][$doctorId][$hour] = $status;
+                }
+            }
+        }
+
+        $appointmentsByDayDoctorHour = [];
+        foreach ($appointments as $appointment) {
+            $dayKey = $appointment->getStartDate()?->format('Y-m-d');
+            $doctorId = $appointment->getOwner()?->getId();
+            if ($dayKey === null || $doctorId === null || !isset($days[$dayKey])) {
+                continue;
+            }
+
+            $hour = (int) $appointment->getStartDate()?->format('G');
+            $appointmentsByDayDoctorHour[$dayKey][$doctorId][$hour][] = $appointment;
+        }
+
         if ($view === 'day') {
             $previousRef = $rangeStart->modify('-1 day');
             $nextRef = $rangeStart->modify('+1 day');
@@ -244,9 +386,25 @@ class PatientAppointmentCrudController extends BaseCrudController
                 'name' => 'ASC',
             ]);
         }
-
+        $isWorkingOnDay= [];
+        dump($slotStatusByDayDoctorHour);
+        foreach($slotStatusByDayDoctorHour as $dayKey => $doctorsHours) {
+            foreach ($doctorsHours as $doctorId => $hoursStatus) {
+                foreach ($hoursStatus as $hour => $status) {
+                    if ($status === 'open') {
+                        $isWorkingOnDay[$doctorId][$dayKey] = true;
+                    }
+                }
+            }
+        }
+        dump($isWorkingOnDay);
         return $this->render('@ProlyfixOnlineCalendar/admin/week_view.html.twig', [
             'days' => $days,
+            'hours' => $hours,
+            'doctors' => $doctors,
+            'isWorkingOnDay' => $isWorkingOnDay,
+            'appointmentsByDayDoctorHour' => $appointmentsByDayDoctorHour,
+            'slotStatusByDayDoctorHour' => $slotStatusByDayDoctorHour,
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
             'viewMode' => $view,
