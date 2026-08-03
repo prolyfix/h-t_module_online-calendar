@@ -59,6 +59,17 @@ class ProlyfixOnlineCalendarBundle extends ModuleBundle
         return [];
     }
 
+    public static function getModuleConfigurationTabs(): array
+    {
+        return [
+            'online_calendar_open_times' => [
+                'label' => 'Open Times',
+                'controller' => OpenTimeCrudController::class,
+                'action' => 'moduleConfigurationTab',
+            ],
+        ];
+    }
+
     public static function getModuleRights(): array
     {
         return [];
@@ -69,12 +80,10 @@ class ProlyfixOnlineCalendarBundle extends ModuleBundle
         return [
             'patient'=> [
                 MenuItem::linkToCrud('PatientenCalendar', 'fas fa-user-injured', PatientAppointment::class),
-                MenuItem::linkToCrud('AppointmentCategory', 'fas fa-user-injured', AppointmentCategory::class),
                 MenuItem::linkToRoute('Weekly View', 'fas fa-calendar-week', 'admin', [
                     'crudAction' => 'weekView',
                     'crudControllerFqcn' => PatientAppointmentCrudController::class,
                 ]),
-                MenuItem::linkToCrud('Open Times', 'fas fa-clock', OpenTime::class),
             ]
         ];
     }
