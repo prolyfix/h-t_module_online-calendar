@@ -23,6 +23,7 @@ jobs:
         with:
           php-version: '8.2'
           coverage: none
+          tools: phpunit:9.6
 
       - name: Validate composer.json
         run: composer validate --strict
@@ -31,7 +32,7 @@ jobs:
         run: find src tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Run bundle metadata test
-        run: php tests/BundleMetadataTest.php
+        run: phpunit tests/BundleMetadataTest.php
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
