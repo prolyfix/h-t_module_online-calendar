@@ -1,0 +1,5 @@
+name: online-calendar-send-validated-appointment-reminders
+description: Send daily noon reminder emails for tomorrow's validated appointments of opted-in patients.
+cron: "0 12 * * *"
+command: "online-calendar:send-validated-appointment-reminders"
+timezone: "Europe/Paris"

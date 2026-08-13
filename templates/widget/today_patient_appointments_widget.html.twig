@@ -1,23 +1,56 @@
-<div class="card h-100">
-    <div class="card-body">
-        <h5 class="card-title">{{ 'online_calendar.widget.today_appointments.title'|trans }}</h5>
+{% extends '@ProlyfixHolidayAndTime/widget/_skeleton.html.twig' %}
 
-        {% if appointments is empty %}
-            <p class="text-muted mb-0">{{ 'online_calendar.widget.today_appointments.empty'|trans }}</p>
-        {% else %}
-            <ul class="list-group list-group-flush">
-                {% for appointment in appointments %}
-                    <li class="list-group-item px-0">
-                        <div><strong>{{ appointment.startDate ? appointment.startDate|date('H:i') : '-' }}</strong> - {{ appointment.name ?: ('online_calendar.widget.today_appointments.default_name'|trans) }}</div>
-                        <div class="text-muted small">
-                            {{ appointment.patient ? appointment.patient : '-' }}
-                            {% if appointment.appointmentType %}
-                                • {{ appointment.appointmentType.name }}
+{% block title %}
+    {{ 'online_calendar.widget.today_appointments.title'|trans }}
+{% endblock %}
+
+{% block content %}
+    <form method="get" class="mb-3">
+        <input type="date" name="date" value="{{ selectedDate|date('Y-m-d') }}" class="form-control form-control-sm" aria-label="Selected date">
+    </form>
+
+    {% if appointments is empty %}
+        <p class="text-muted mb-0">{{ 'online_calendar.widget.today_appointments.empty'|trans }}</p>
+    {% else %}
+        {% set timeStart = 8 * 60 %}
+        {% set timeEnd = 18 * 60 %}
+        {% set slotHeight = 52 %}
+        {% set dayHeight = ((timeEnd - timeStart) / 60) * slotHeight %}
+
+        <div class="d-flex align-items-stretch" style="min-height: {{ dayHeight + 20 }}px;">
+            <div style="width: 52px; flex-shrink: 0;">
+                {% for hour in hours %}
+                    <div style="height: {{ slotHeight }}px; font-size: 11px; color: #6c757d; line-height: {{ slotHeight }}px; text-align: center;">
+                        {{ '%02d'|format(hour) }}:00
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="position-relative w-100 border rounded bg-light" style="height: {{ dayHeight }}px; overflow: hidden;">
+                {% for hour in hours %}
+                    <div style="position:absolute; left:0; right:0; top: {{ ((hour - 8) * 60) / 60 * slotHeight }}px; border-top: 1px solid #dee2e6; height: {{ slotHeight }}px;"></div>
+                {% endfor %}
+
+                {% if currentTimeMinutes is not null and currentTimeMinutes >= timeStart and currentTimeMinutes <= timeEnd %}
+                    {% set currentTop = ((currentTimeMinutes - timeStart) / 60) * slotHeight %}
+                    <div style="position:absolute; left:0; right:0; top: {{ currentTop }}px; border-top: 2px solid #dc3545; z-index: 3;"></div>
+                    <div style="position:absolute; left:10px; top: {{ currentTop - 8 }}px; width: 10px; height: 10px; background: #dc3545; border-radius: 50%; z-index: 4;"></div>
+                {% endif %}
+
+                {% for item in schedule %}
+                    {% set top = ((item.startMinutes - timeStart) / 60) * slotHeight %}
+                    {% set height = max(26, (item.durationMinutes / 60) * slotHeight) %}
+                    <div class="position-absolute start-0 end-0 px-2" style="top: {{ top }}px; height: {{ height }}px; z-index: 2;">
+                        <div class="h-100 rounded border border-primary bg-primary bg-opacity-10 px-2 py-1 overflow-hidden" style="box-shadow: inset 0 0 0 1px rgba(13,110,253,0.2);">
+                            <div class="fw-semibold small">{{ item.appointment.startDate|date('H:i') }} - {{ item.appointment.endDate|date('H:i') }}</div>
+                            <div class="small text-truncate">{{ item.appointment.name ?: 'Appointment' }}</div>
+                            {% if item.appointment.patient %}
+                                <div class="small text-muted text-truncate">{{ item.appointment.patient }}</div>
                             {% endif %}
                         </div>
-                    </li>
+                    </div>
                 {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
-</div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

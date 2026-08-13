@@ -1,0 +1,5 @@
+name: online-calendar-purge-cancelled-appointments
+description: Purge cancelled appointments older than the retention window.
+cron: "0 2 * * *"
+command: "online-calendar:purge-cancelled-appointments"
+timezone: "UTC"

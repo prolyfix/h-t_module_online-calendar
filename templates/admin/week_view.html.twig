@@ -6,8 +6,15 @@
 
 {% block page_actions %}
 	<div class="d-flex flex-wrap gap-2 align-items-center">
-		<form method="get" action="{{ ea_url().setController('Prolyfix\\OnlineCalendarBundle\\Controller\\Admin\\PatientAppointmentCrudController').setAction('weekView') }}" class="d-flex gap-2 align-items-center">
+		<form method="get" action="{{ ea_url().setController('Prolyfix\\OnlineCalendarBundle\\Controller\\Admin\\PatientAppointmentCrudController').setAction('weekView').unset('entityId') }}" class="d-flex gap-2 align-items-center flex-wrap">
 			<input type="hidden" name="view" value="{{ viewMode }}">
+			<input type="hidden" name="week" value="{{ selectedDate|date('W') }}">
+			<input type="hidden" name="year" value="{{ selectedDate|date('o') }}">
+			{% if selectedPatientId is defined and selectedPatientId > 0 %}
+				<input type="hidden" name="patientId" value="{{ selectedPatientId }}">
+			{% endif %}
+			<label for="week-view-date" class="mb-0">Date</label>
+			<input id="week-view-date" type="date" name="date" value="{{ selectedDate|date('Y-m-d') }}" class="form-control form-control-sm" style="min-width: 160px;">
 			<label for="week-view-user" class="mb-0">{{ 'online_calendar.filter.user'|trans }}</label>
 			<select id="week-view-user" name="userId" class="form-select form-select-sm" style="min-width: 220px;">
 				<option value="">{{ 'online_calendar.filter.all_users'|trans }}</option>
@@ -88,6 +95,7 @@
                                         .set('slotDate', day.date|date('Y-m-d'))
                                         .set('slotHour', hour)
                                         .set('slotDoctorId', doctor.id)
+										.set('patientId', selectedPatientId > 0 ? selectedPatientId : null)
                                     %}
 										<td class="slot-cell slot-{{ slotStatus }} slot-clickable" data-action="click->week-slot#open" data-slot-url="{{ slotUrl }}" style="vertical-align: top; min-height: 80px;">
 											{% for appointment in dayAppointments %}
@@ -129,6 +137,7 @@
                                     .set('slotDate', day.date|date('Y-m-d'))
                                     .set('slotHour', hour)
                                     .set('slotDoctorId', selectedUserId > 0 ? selectedUserId : null)
+										.set('patientId', selectedPatientId > 0 ? selectedPatientId : null)
                                 %}
 								<td class="slot-cell slot-clickable" data-action="click->week-slot#open" data-slot-url="{{ slotUrl }}" style="vertical-align: top; min-height: 80px;">
 									{% set dayAppointments = day.appointments|filter((app) => app.startDate.format('H')|number_format(0) == hour) %}

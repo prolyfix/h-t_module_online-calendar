@@ -21,6 +21,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Prolyfix\HolidayAndTime\Entity\User;
 use Prolyfix\OnlineCalendarBundle\Entity\OpenTime;
 use Prolyfix\OnlineCalendarBundle\Entity\PatientAppointment;
+use Prolyfix\PatientManagementBundle\Entity\Patient;
 use Symfony\Component\HttpFoundation\Response;
 
 class PatientAppointmentCrudController extends BaseCrudController
@@ -57,6 +58,14 @@ class PatientAppointmentCrudController extends BaseCrudController
             $doctor = $this->em->getRepository(User::class)->find($slotDoctorId);
             if ($doctor instanceof User) {
                 $appointment->setOwner($doctor);
+            }
+        }
+
+        $patientId = $request->query->getInt('patientId');
+        if ($patientId > 0) {
+            $patient = $this->em->getRepository(Patient::class)->find($patientId);
+            if ($patient instanceof Patient) {
+                $appointment->setPatient($patient);
             }
         }
 
@@ -126,11 +135,14 @@ class PatientAppointmentCrudController extends BaseCrudController
         AdminContext $context,
         AdminUrlGenerator $adminUrlGenerator
     ): Response {
+        $baseAdminUrlGenerator = (clone $adminUrlGenerator)->unset('entityId');
+
         $request = $context->getRequest();
         $today = new DateTimeImmutable('today');
         $view = $request->query->get('view', 'week');
         $view = in_array($view, ['week', 'day'], true) ? $view : 'week';
         $selectedUserId = $request->query->getInt('userId');
+        $selectedPatientId = $request->query->getInt('patientId');
 
         $selectedDateInput = (string) $request->query->get('date', $today->format('Y-m-d'));
         $selectedDate = DateTimeImmutable::createFromFormat('Y-m-d', $selectedDateInput) ?: $today;
@@ -141,8 +153,18 @@ class PatientAppointmentCrudController extends BaseCrudController
             $weekStart = $rangeStart;
             $weekEnd = $rangeStart;
         } else {
-            $week = (int) $request->query->get('week', $today->format('W'));
-            $year = (int) $request->query->get('year', $today->format('o'));
+            $hasExplicitDate = $request->query->has('date');
+            $defaultWeek = (int) $selectedDate->format('W');
+            $defaultYear = (int) $selectedDate->format('o');
+
+            if ($hasExplicitDate) {
+                $week = $defaultWeek;
+                $year = $defaultYear;
+            } else {
+                $week = (int) $request->query->get('week', (string) $defaultWeek);
+                $year = (int) $request->query->get('year', (string) $defaultYear);
+            }
+
             $weekStart = (new DateTimeImmutable())->setISODate($year, $week)->setTime(0, 0);
             $rangeStart = $weekStart;
             $rangeEnd = $weekStart->modify('+1 week');
@@ -305,75 +327,87 @@ class PatientAppointmentCrudController extends BaseCrudController
             $previousRef = $rangeStart->modify('-1 day');
             $nextRef = $rangeStart->modify('+1 day');
 
-            $previousUrl = (clone $adminUrlGenerator)
+            $previousUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'day')
                 ->set('date', $previousRef->format('Y-m-d'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
 
-            $currentUrl = (clone $adminUrlGenerator)
+            $currentUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'day')
                 ->set('date', $today->format('Y-m-d'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
 
-            $nextUrl = (clone $adminUrlGenerator)
+            $nextUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'day')
                 ->set('date', $nextRef->format('Y-m-d'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
         } else {
-            $previousWeek = $weekStart->modify('-1 week');
-            $nextWeek = $weekStart->modify('+1 week');
+            $previousWeekDate = $selectedDate->modify('-7 days');
+            $nextWeekDate = $selectedDate->modify('+7 days');
+            $previousWeek = $previousWeekDate->modify('monday this week');
+            $nextWeek = $nextWeekDate->modify('monday this week');
 
-            $previousUrl = (clone $adminUrlGenerator)
+            $previousUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'week')
+                ->set('date', $previousWeekDate->format('Y-m-d'))
                 ->set('week', (int) $previousWeek->format('W'))
                 ->set('year', (int) $previousWeek->format('o'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
 
-            $currentUrl = (clone $adminUrlGenerator)
+            $currentUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'week')
+                ->set('date', $today->format('Y-m-d'))
                 ->set('week', (int) $today->format('W'))
                 ->set('year', (int) $today->format('o'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
 
-            $nextUrl = (clone $adminUrlGenerator)
+            $nextUrl = (clone $baseAdminUrlGenerator)
                 ->setController(self::class)
                 ->setAction('weekView')
                 ->set('view', 'week')
+                ->set('date', $nextWeekDate->format('Y-m-d'))
                 ->set('week', (int) $nextWeek->format('W'))
                 ->set('year', (int) $nextWeek->format('o'))
+                ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
                 ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
                 ->generateUrl();
         }
 
-        $toggleDayUrl = (clone $adminUrlGenerator)
+        $toggleDayUrl = (clone $baseAdminUrlGenerator)
             ->setController(self::class)
             ->setAction('weekView')
             ->set('view', 'day')
-            ->set('date', $today->format('Y-m-d'))
+            ->set('date', $selectedDate->format('Y-m-d'))
+            ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
             ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
             ->generateUrl();
 
-        $toggleWeekUrl = (clone $adminUrlGenerator)
+        $toggleWeekUrl = (clone $baseAdminUrlGenerator)
             ->setController(self::class)
             ->setAction('weekView')
             ->set('view', 'week')
-            ->set('week', (int) $today->format('W'))
-            ->set('year', (int) $today->format('o'))
+            ->set('date', $selectedDate->format('Y-m-d'))
+            ->set('patientId', $selectedPatientId > 0 ? $selectedPatientId : null)
             ->set('userId', $selectedUserId > 0 ? $selectedUserId : null)
             ->generateUrl();
 
@@ -386,18 +420,17 @@ class PatientAppointmentCrudController extends BaseCrudController
                 'name' => 'ASC',
             ]);
         }
-        $isWorkingOnDay= [];
-        dump($slotStatusByDayDoctorHour);
-        foreach($slotStatusByDayDoctorHour as $dayKey => $doctorsHours) {
+        $isWorkingOnDay = [];
+        foreach ($slotStatusByDayDoctorHour as $dayKey => $doctorsHours) {
             foreach ($doctorsHours as $doctorId => $hoursStatus) {
-                foreach ($hoursStatus as $hour => $status) {
+                foreach ($hoursStatus as $status) {
                     if ($status === 'open') {
                         $isWorkingOnDay[$doctorId][$dayKey] = true;
                     }
                 }
             }
         }
-        dump($isWorkingOnDay);
+
         return $this->render('@ProlyfixOnlineCalendar/admin/week_view.html.twig', [
             'days' => $days,
             'hours' => $hours,
@@ -408,7 +441,9 @@ class PatientAppointmentCrudController extends BaseCrudController
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
             'viewMode' => $view,
+            'selectedDate' => $selectedDate,
             'selectedUserId' => $selectedUserId,
+            'selectedPatientId' => $selectedPatientId,
             'users' => $users,
             'previousUrl' => $previousUrl,
             'currentUrl' => $currentUrl,

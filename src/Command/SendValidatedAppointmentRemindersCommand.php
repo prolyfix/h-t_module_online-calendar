@@ -18,7 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 #[AsCommand(
     name: 'online-calendar:send-validated-appointment-reminders',
-    description: 'Sends reminders for tomorrow\'s validated appointments.',
+    description: 'Sends daily noon reminders for validated appointments of opted-in patients.',
 )]
 class SendValidatedAppointmentRemindersCommand extends Command
 {
@@ -39,18 +39,22 @@ class SendValidatedAppointmentRemindersCommand extends Command
         $tomorrowEnd = $tomorrowStart->modify('+1 day');
 
         $appointments = $this->appointmentRepository->createQueryBuilder('a')
+            ->leftJoin('a.patient', 'p')
             ->andWhere('a.status = :status')
             ->andWhere('a.startDate >= :start')
             ->andWhere('a.startDate < :end')
             ->andWhere('a.reminderSentAt IS NULL')
+            ->andWhere('a.patient IS NOT NULL')
+            ->andWhere('p.emailOptIn = :emailOptIn')
             ->setParameter('status', PatientAppointment::STATUS_VALIDATED)
             ->setParameter('start', $tomorrowStart)
             ->setParameter('end', $tomorrowEnd)
+            ->setParameter('emailOptIn', true)
             ->getQuery()
             ->getResult();
 
         if (count($appointments) === 0) {
-            $io->success('No validated appointments for tomorrow without reminders.');
+            $io->success('No validated appointments for tomorrow without reminders for opted-in patients.');
             return Command::SUCCESS;
         }
 
@@ -65,7 +69,13 @@ class SendValidatedAppointmentRemindersCommand extends Command
                 continue;
             }
 
-            $recipient = $appointment->getEmailAddress() ?: $appointment->getPatient()?->getEmail();
+            $patient = $appointment->getPatient();
+            if ($patient === null || !$patient->isEmailOptIn()) {
+                $skipped++;
+                continue;
+            }
+
+            $recipient = $patient->getEmail() ?: $appointment->getEmailAddress();
             if ($recipient === null || $recipient === '') {
                 $skipped++;
                 continue;
@@ -73,7 +83,7 @@ class SendValidatedAppointmentRemindersCommand extends Command
 
             try {
                 $patientName = trim((string) (
-                    $appointment->getPatient()?->getFirstName() . ' ' . $appointment->getPatient()?->getLastName()
+                    $patient->getFirstName() . ' ' . $patient->getLastName()
                 ));
 
                 if ($patientName === '') {
