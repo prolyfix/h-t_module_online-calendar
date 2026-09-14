@@ -25,14 +25,17 @@ jobs:
           coverage: none
           tools: phpunit:9.6
 
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
       - name: Validate composer.json
         run: composer validate --strict --no-check-lock --no-check-all
 
       - name: Lint PHP sources
         run: find src tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Run bundle metadata test
-        run: phpunit tests/BundleMetadataTest.php
+      - name: Run PHPUnit tests
+        run: vendor/bin/phpunit --testdox
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
